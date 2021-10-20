@@ -106,3 +106,12 @@ resource "octopusdeploy_azure_web_app_deployment_target" "ops-api-production" {
   tenanted_deployment_participation = "Untenanted"
   web_app_name                      = "ops-api-production"
 }
+
+resource "octopusdeploy_listening_tentacle_deployment_target" "example" {
+  environments                      = [octopusdeploy_environment.development.id, octopusdeploy_environment.staging.id, octopusdeploy_environment.production.id]
+  name                              = "OctoPetShop Database Runner"
+  roles                             = ["db"]
+  tenanted_deployment_participation = "Untenanted"
+  tentacle_url                      = "https://20.109.160.174:10933"
+  thumbprint                        = "75EBA605FA31DD3607CA5A2F33C9AD1603E41E14"
+}
