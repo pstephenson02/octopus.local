@@ -107,7 +107,7 @@ resource "octopusdeploy_azure_web_app_deployment_target" "ops-api-production" {
   web_app_name                      = "ops-api-production"
 }
 
-resource "octopusdeploy_listening_tentacle_deployment_target" "example" {
+resource "octopusdeploy_listening_tentacle_deployment_target" "ops-database-runner" {
   environments                      = [octopusdeploy_environment.development.id, octopusdeploy_environment.staging.id, octopusdeploy_environment.production.id]
   name                              = "OctoPetShop Database Runner"
   roles                             = ["db"]
