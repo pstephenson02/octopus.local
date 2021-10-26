@@ -7,35 +7,24 @@ terraform {
 }
 
 provider "octopusdeploy" {
-  address = var.octopus_server_address
-  api_key  = var.octopus_api_key
-  space_name   = "Default"
-}
-
-resource "octopusdeploy_project_group" "dotnet" {
-  name        = ".NET"
-  description = ".NET based projects"
+  address    = var.octopus_server_address
+  api_key    = var.octopus_api_key
+  space_name = "Default"
 }
 
 resource "octopusdeploy_environment" "development" {
-  allow_dynamic_infrastructure = false
-  description                  = ""
-  name                         = "Development"
-  use_guided_failure           = false
+  name       = "Development"
+  sort_order = 1
 }
 
 resource "octopusdeploy_environment" "staging" {
-  allow_dynamic_infrastructure = false
-  description                  = ""
-  name                         = "Staging"
-  use_guided_failure           = false
+  name       = "Staging"
+  sort_order = 2
 }
 
 resource "octopusdeploy_environment" "production" {
-  allow_dynamic_infrastructure = false
-  description                  = ""
-  name                         = "Production"
-  use_guided_failure           = false
+  name       = "Production"
+  sort_order = 3
 }
 
 resource "octopusdeploy_azure_service_principal" "octopusdeploy_onmicrosoft_com" {
@@ -112,6 +101,61 @@ resource "octopusdeploy_listening_tentacle_deployment_target" "ops-database-runn
   name                              = "OctoPetShop Database Runner"
   roles                             = ["db"]
   tenanted_deployment_participation = "Untenanted"
-  tentacle_url                      = "https://20.109.160.174:10933"
-  thumbprint                        = "75EBA605FA31DD3607CA5A2F33C9AD1603E41E14"
+  tentacle_url                      = var.ops_db_runner.tentacle_url
+  thumbprint                        = var.ops_db_runner.tentacle_thumbprint
+}
+
+resource "octopusdeploy_nuget_feed" "ops_nuget_feed" {
+  feed_uri                       = "https://nuget.pkg.github.com/${var.github_credentials.username}/index.json"
+  is_enhanced_mode               = true
+  name                           = "${var.github_credentials.username} GitHub NuGet Feed"
+  username                       = var.github_credentials.username
+  password                       = var.github_credentials.token
+}
+
+data "octopusdeploy_lifecycles" "default_lifecycle" {
+  partial_name = "Default"
+  take         = 1
+}
+
+resource "octopusdeploy_project_group" "dotnet" {
+  name        = ".NET"
+  description = ".NET based projects"
+}
+
+resource "octopusdeploy_project" "octopetshop" {
+  lifecycle_id     = data.octopusdeploy_lifecycles.default_lifecycle.lifecycles[0].id
+  name             = "OctoPetShop"
+  project_group_id = octopusdeploy_project_group.dotnet.id
+}
+
+resource "octopusdeploy_deployment_process" "ops_deployment_process" {
+  project_id = octopusdeploy_project.octopetshop.id
+  step {
+    condition = "Success"
+    name      = "Run Database Migrations"
+    target_roles = ["db"]
+    deploy_package_action {
+      name        = "Run Database Migrations"
+      primary_package {
+        package_id = "OctopusDeploy.OctoPetShop.Database"
+        feed_id    = octopusdeploy_nuget_feed.ops_nuget_feed.id
+        acquisition_location = "Server"
+        properties = {
+          "SelectionMode" = "immediate"
+        }
+      }
+      features = ["Octopus.Features.CustomScripts"]
+      properties = {
+        "Octopus.Action.EnabledFeatures"              = "Octopus.Features.CustomScripts"
+        "Octopus.Action.CustomScripts.PostDeploy.ps1" = <<-EOT
+            $connectionString = $OctopusParameters["${octopusdeploy_variable.ops_database_connection_string.name}"]
+            .\OctopusDeploy.OctoPetShop.Database.exe --ConnectionString="$connectionString"
+        EOT
+        "Octopus.Action.Package.PackageId" = "OctopusDeploy.OctoPetShop.Database",
+        "Octopus.Action.Package.FeedId" = octopusdeploy_nuget_feed.ops_nuget_feed.id,
+        "Octopus.Action.Package.DownloadOnTentacle" = "False"
+      }
+    }
+  }
 }

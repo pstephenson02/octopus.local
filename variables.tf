@@ -20,3 +20,32 @@ variable "azure_service_principal" {
   })
   sensitive = true
 }
+
+variable "github_credentials" {
+  type = object({
+    username = string
+    token = string
+  })
+  sensitive = true
+}
+
+variable "ops_database_credentials" {
+  type = object({
+    username = string
+    password = string
+  })
+  sensitive = true
+}
+
+
+variable "ops_sql_server" {
+  description = "SQL Server name"
+  type        = string
+}
+
+variable "ops_db_runner" {
+  type = object({
+    tentacle_url = string
+    tentacle_thumbprint = string
+  })
+}
