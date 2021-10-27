@@ -147,12 +147,74 @@ resource "octopusdeploy_deployment_process" "ops_deployment_process" {
       }
       features = ["Octopus.Features.CustomScripts"]
       properties = {
-        "Octopus.Action.EnabledFeatures"              = "Octopus.Features.CustomScripts"
+        "Octopus.Action.EnabledFeatures" = "Octopus.Features.CustomScripts"
         "Octopus.Action.CustomScripts.PostDeploy.ps1" = <<-EOT
             $connectionString = $OctopusParameters["${octopusdeploy_variable.ops_database_connection_string.name}"]
             .\OctopusDeploy.OctoPetShop.Database.exe --ConnectionString="$connectionString"
         EOT
         "Octopus.Action.Package.PackageId" = "OctopusDeploy.OctoPetShop.Database",
+        "Octopus.Action.Package.FeedId" = octopusdeploy_nuget_feed.ops_nuget_feed.id,
+        "Octopus.Action.Package.DownloadOnTentacle" = "False"
+      }
+    }
+  }
+  step {
+    condition = "Success"
+    name      = "Deploy OctoPetShop Product API"
+    target_roles = ["api"]
+    action {
+      action_type = "Octopus.AzureAppService"
+      name        = "Deploy OctoPetShop Product API"
+      primary_package {
+        package_id = "OctopusDeploy.OctoPetShop.Api"
+        feed_id    = octopusdeploy_nuget_feed.ops_nuget_feed.id
+        acquisition_location = "Server"
+        properties = {
+          "SelectionMode" = "immediate"
+        }
+      }
+      features = [
+        "Octopus.Features.JsonConfigurationVariables",
+        "Octopus.Features.ConfigurationTransforms",
+        "Octopus.Features.SubstituteInFiles",
+      ]
+      properties = {
+        "Octopus.Action.EnabledFeatures" = "Octopus.Features.JsonConfigurationVariables,Octopus.Features.ConfigurationTransforms,Octopus.Features.SubstituteInFiles"
+        "OctopusUseBundledTooling" = "False",
+        "Octopus.Action.Azure.DeploymentType" = "Package",
+        "Octopus.Action.Package.JsonConfigurationVariablesTargets" = "appsettings.json",
+        "Octopus.Action.Package.PackageId" = "OctopusDeploy.OctoPetShop.Api",
+        "Octopus.Action.Package.FeedId" = octopusdeploy_nuget_feed.ops_nuget_feed.id,
+        "Octopus.Action.Package.DownloadOnTentacle" = "False"
+      }
+    }
+  }
+  step {
+    condition = "Success"
+    name      = "Deploy OctoPetShop Web App"
+    target_roles = ["web"]
+    action {
+      action_type = "Octopus.AzureAppService"
+      name        = "Deploy OctoPetShop Web App"
+      primary_package {
+        package_id = "OctopusDeploy.OctoPetShop.Web"
+        feed_id    = octopusdeploy_nuget_feed.ops_nuget_feed.id
+        acquisition_location = "Server"
+        properties = {
+          "SelectionMode" = "immediate"
+        }
+      }
+      features = [
+        "Octopus.Features.JsonConfigurationVariables",
+        "Octopus.Features.ConfigurationTransforms",
+        "Octopus.Features.SubstituteInFiles",
+      ]
+      properties = {
+        "Octopus.Action.EnabledFeatures" = "Octopus.Features.JsonConfigurationVariables,Octopus.Features.ConfigurationTransforms,Octopus.Features.SubstituteInFiles"
+        "OctopusUseBundledTooling" = "False",
+        "Octopus.Action.Azure.DeploymentType" = "Package",
+        "Octopus.Action.Package.JsonConfigurationVariablesTargets" = "appsettings.json",
+        "Octopus.Action.Package.PackageId" = "OctopusDeploy.OctoPetShop.Web",
         "Octopus.Action.Package.FeedId" = octopusdeploy_nuget_feed.ops_nuget_feed.id,
         "Octopus.Action.Package.DownloadOnTentacle" = "False"
       }
