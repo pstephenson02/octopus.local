@@ -21,7 +21,7 @@ resource "octopusdeploy_variable" "ops_database_username" {
 
 resource "octopusdeploy_variable" "ops_database_password" {
   name = "OctoPetShop.Database.Password"
-  value = var.ops_database_credentials.password
+  sensitive_value = var.ops_database_credentials.password
   is_sensitive = true
   type = "Sensitive"
   owner_id = octopusdeploy_project.octopetshop.id
