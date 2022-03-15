@@ -49,3 +49,7 @@ variable "ops_db_runner" {
     tentacle_thumbprint = string
   })
 }
+
+variable "azure_resource_group_name" {
+  type = string
+}

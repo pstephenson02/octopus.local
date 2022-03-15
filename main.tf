@@ -3,6 +3,10 @@ terraform {
     octopusdeploy = {
       source = "OctopusDeployLabs/octopusdeploy"
     }
+    azurerm = {
+      source  = "hashicorp/azurerm"
+      version = "=2.46.0"
+    }
   }
 }
 
@@ -103,6 +107,7 @@ resource "octopusdeploy_listening_tentacle_deployment_target" "ops-database-runn
   tenanted_deployment_participation = "Untenanted"
   tentacle_url                      = var.ops_db_runner.tentacle_url
   thumbprint                        = var.ops_db_runner.tentacle_thumbprint
+  depends_on                        = [azurerm_mssql_server.ops_mssql_server]
 }
 
 resource "octopusdeploy_nuget_feed" "ops_nuget_feed" {
